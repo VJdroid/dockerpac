@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Stylizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #3b82f6;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
+
+    <div class="bg-gray-800 p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-2xl transform transition-all duration-300">
+        <div class="text-center mb-6">
+            <h1 class="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 mb-2">AI Image Stylizer</h1>
+            <p class="text-gray-400">Upload your photo and describe how you want to transform it.</p>
+        </div>
+
+        <!-- Step 1: Image Upload -->
+        <div class="mb-6">
+             <label class="block text-sm font-medium text-gray-300 mb-2">Step 1: Upload Your Photo</label>
+             <div class="mt-2 flex justify-center rounded-lg border border-dashed border-gray-600 px-6 py-10">
+                <div id="image-preview-container" class="text-center hidden w-full">
+                     <img id="image-preview" class="mx-auto h-48 w-auto rounded-md" src="" alt="Your uploaded image">
+                     <button id="change-image-btn" class="mt-4 text-sm font-semibold text-blue-400 hover:text-blue-500">Change Image</button>
+                </div>
+                <div id="upload-prompt" class="text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-500" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M1.5 6a2.25 2.25 0 012.25-2.25h16.5A2.25 2.25 0 0122.5 6v12a2.25 2.25 0 01-2.25 2.25H3.75A2.25 2.25 0 011.5 18V6zM3 16.06V18c0 .414.336.75.75.75h16.5A.75.75 0 0021 18v-1.94l-2.69-2.689a1.5 1.5 0 00-2.12 0l-.88.879.97.97a.75.75 0 11-1.06 1.06l-5.16-5.159a1.5 1.5 0 00-2.12 0L3 16.061zm10.125-7.81a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0z" clip-rule="evenodd" />
+                    </svg>
+                    <div class="mt-4 flex text-sm leading-6 text-gray-400">
+                        <label for="image-upload" class="relative cursor-pointer rounded-md font-semibold text-blue-400 focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-600 focus-within:ring-offset-2 focus-within:ring-offset-gray-900 hover:text-blue-500">
+                            <span>Upload a file</span>
+                            <input id="image-upload" name="image-upload" type="file" class="sr-only" accept="image/png, image/jpeg, image/webp">
+                        </label>
+                        <p class="pl-1">or drag and drop</p>
+                    </div>
+                    <p class="text-xs leading-5 text-gray-500">PNG, JPG, WEBP up to 10MB</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Prompt Input -->
+        <div class="mb-4">
+            <label for="prompt" class="block text-sm font-medium text-gray-300 mb-2">Step 2: Describe the Transformation</label>
+            <textarea id="prompt" rows="6" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 resize-none">A portrait of a determined male figure looking upward, embodying a sense of ambition and strength. The background is a vibrant, solid red, creating a dramatic contrast. The figure's facial features are exaggerated and stylized, emphasizing sharp lines and bold colors with a graphic, illustrated aesthetic reminiscent of street art or modern comic styles. The subject wears a racing suit, detailed with sponsor logos, rendered in deep blacks and grays, with subtle highlights and shadows that enhance the figure's muscular structure. The lighting casts dramatic highlights on the face, accentuating the thoughtful expression and tousled hair, while thin, angular lines flow around the figure, adding a dynamic sense of movement. The overall composition conveys intensity and passion, inviting the viewer to feel the energy of the racing world.</textarea>
+        </div>
+
+        <!-- Generate Button -->
+        <button id="generate-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105 duration-300 ease-in-out shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-800 disabled:bg-gray-500 disabled:cursor-not-allowed" disabled>
+            Generate Image
+        </button>
+
+        <!-- Loading and Result Area -->
+        <div id="result-container" class="mt-6 bg-gray-700/50 rounded-lg p-4 min-h-[300px] flex items-center justify-center border border-dashed border-gray-600">
+            <div id="loading" class="text-center hidden">
+                <div class="spinner mx-auto mb-3"></div>
+                <p class="text-gray-400">Styling your image... This may take a moment.</p>
+            </div>
+            <img id="result-image" src="" alt="Generated AI Image" class="hidden max-w-full max-h-[512px] rounded-lg shadow-md"/>
+            <div id="initial-message" class="text-center text-gray-500">
+                <p>Your generated image will appear here.</p>
+            </div>
+             <div id="error-message" class="hidden text-center text-red-400">
+                 <p>Something went wrong. Please try again.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const imageUploadInput = document.getElementById('image-upload');
+        const uploadPrompt = document.getElementById('upload-prompt');
+        const imagePreviewContainer = document.getElementById('image-preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const changeImageBtn = document.getElementById('change-image-btn');
+
+        const generateBtn = document.getElementById('generate-btn');
+        const promptInput = document.getElementById('prompt');
+        const loadingIndicator = document.getElementById('loading');
+        const resultImage = document.getElementById('result-image');
+        const initialMessage = document.getElementById('initial-message');
+        const errorMessage = document.getElementById('error-message');
+
+        const apiKey = ""; // The environment will provide the actual key.
+        let uploadedBase64Image = null;
+        let uploadedMimeType = null;
+
+        /**
+         * Handles the file input change event to process the uploaded image.
+         */
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file || !file.type.startsWith('image/')) {
+                showError('Please select a valid image file.');
+                return;
+            }
+
+            uploadedMimeType = file.type;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+                // Store base64 data without the data URL prefix
+                uploadedBase64Image = e.target.result.split(',')[1];
+                
+                // Update UI
+                uploadPrompt.classList.add('hidden');
+                imagePreviewContainer.classList.remove('hidden');
+                generateBtn.disabled = false;
+            };
+            reader.onerror = () => {
+                showError('Failed to read the image file.');
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // Allow changing the image
+        changeImageBtn.addEventListener('click', () => {
+            imageUploadInput.click();
+        });
+
+        imageUploadInput.addEventListener('change', handleImageUpload);
+
+        /**
+         * Fetches an image from the API with exponential backoff for retries.
+         */
+        async function fetchWithExponentialBackoff(prompt, base64Image, mimeType, maxRetries = 5, initialDelay = 1000) {
+            let delay = initialDelay;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
+
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const payload = {
+                        contents: [{
+                            parts: [
+                                { text: prompt },
+                                {
+                                    inlineData: {
+                                        mimeType: mimeType,
+                                        data: base64Image
+                                    }
+                                }
+                            ]
+                        }],
+                        generationConfig: {
+                            responseModalities: ['IMAGE']
+                        },
+                    };
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) return response;
+                    if (response.status === 429 || response.status >= 500) {
+                         // Don't log to console for retries.
+                    } else {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                } catch (error) {
+                    if (i === maxRetries - 1) throw error;
+                }
+                await new Promise(resolve => setTimeout(resolve, delay));
+                delay *= 2;
+            }
+            throw new Error('Failed to fetch from API after multiple retries.');
+        }
+
+        /**
+         * Main function to generate the image.
+         */
+        async function generateImage() {
+            const prompt = promptInput.value.trim();
+            if (!prompt || !uploadedBase64Image) {
+                showError('Please upload an image and provide a prompt.');
+                return;
+            }
+            
+            setLoadingState(true);
+
+            try {
+                const response = await fetchWithExponentialBackoff(prompt, uploadedBase64Image, uploadedMimeType);
+                const result = await response.json();
+
+                const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+                if (base64Data) {
+                    resultImage.src = `data:image/png;base64,${base64Data}`;
+                    resultImage.classList.remove('hidden');
+                } else {
+                     let errorMessageText = 'Invalid response from API.';
+                     if (result?.promptFeedback?.blockReason) {
+                        const reason = result.promptFeedback.blockReason;
+                        errorMessageText = `Generation blocked. Reason: ${reason}. Try a different image or prompt.`;
+                    }
+                    throw new Error(errorMessageText);
+                }
+            } catch (error) {
+                console.error('Error generating image:', error);
+                showError(error.message || 'Failed to generate image. Please try again.');
+            } finally {
+                setLoadingState(false);
+            }
+        }
+
+        /**
+         * Displays an error message in the result area.
+         */
+        function showError(message) {
+            errorMessage.querySelector('p').textContent = message;
+            errorMessage.classList.remove('hidden');
+            initialMessage.classList.add('hidden');
+            resultImage.classList.add('hidden');
+            loadingIndicator.classList.add('hidden');
+        }
+
+        /**
+         * Sets the loading state of the UI.
+         */
+        function setLoadingState(isLoading) {
+            generateBtn.disabled = isLoading;
+            generateBtn.textContent = isLoading ? 'Generating...' : 'Generate Image';
+            loadingIndicator.classList.toggle('hidden', !isLoading);
+            errorMessage.classList.add('hidden');
+            if(isLoading) {
+                resultImage.classList.add('hidden');
+                initialMessage.classList.add('hidden');
+            }
+        }
+
+        generateBtn.addEventListener('click', generateImage);
+    </script>
+</body>
+</html>
